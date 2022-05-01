@@ -41,10 +41,7 @@ def pre_select(
     else:
         method = RequestMethod.HEAD
         params = QueryParams()
-    if count:
-        headers = Headers({"Prefer": f"count={count}"})
-    else:
-        headers = Headers()
+    headers = Headers({"Prefer": f"count={count}"}) if count else Headers()
     return QueryArgs(method, params, headers, {})
 
 
@@ -155,15 +152,14 @@ class APIResponse(BaseModel):
         cls: Type[APIResponse],
         request_response: RequestResponse,
     ) -> Optional[APIError]:
-        if 200 <= request_response.status_code <= 299: # Response.ok from JS (https://developer.mozilla.org/en-US/docs/Web/API/Response/ok)
+        if 200 <= request_response.status_code <= 299:
             return None
-        else:
-            try:
-                return APIError(request_response.json())
-            except json.JSONDecodeError:
-                return APIError({
-                    "message": request_response.text
-                })
+        try:
+            return APIError(request_response.json())
+        except json.JSONDecodeError:
+            return APIError({
+                "message": request_response.text
+            })
 
     @classmethod
     def from_http_request_response(
@@ -372,7 +368,7 @@ class BaseFilterRequestBuilder:
     def match(self: _FilterT, query: Dict[str, Any]) -> _FilterT:
         updated_query = self
 
-        if len(query) == 0:
+        if not query:
             raise ValueError(
                 "query dictionary should contain at least one key-value pair"
             )
